@@ -1,4 +1,4 @@
-#Wed May 23 16:39:35 PDT 2018
-base.0=C\:\\Users\\am003323\\AndroidStudioProjects\\DerekVideoCamera\\Application\\build\\intermediates\\transforms\\dexMerger\\debug\\11
+#Wed May 30 11:34:06 PDT 2018
+base.0=C\:\\Users\\am003323\\AndroidStudioProjects\\DerekVideoCamera\\Application\\build\\intermediates\\transforms\\dexMerger\\debug\\30
 path.0=classes.dex
 renamed.0=classes.dex

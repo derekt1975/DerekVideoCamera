@@ -2,73 +2,69 @@ package com.derekt75.videocamera;
 
 import android.app.Activity;
 
-public class IsoSetting extends Activity {
-    private Integer mIsoInteger;
-    private Integer mIsoMax;
-    private Integer mIsoMin;
+public class FocalSetting extends Activity {
+    private Float mFocalFloat;
+    private Float mFocalMax;
+    private Float mFocalMin;
     private double mSeekBarScale;
-    private Float mIsoSeekBarValue;
+    private Float mFocalSeekBarValue;
 
-    public IsoSetting(){
-        mIsoMin = Integer.valueOf(50);
-        mIsoMax = Integer.valueOf(3200);
-        mIsoInteger = mIsoMin;
+    public FocalSetting(){
+        mFocalMin = Float.valueOf(0.01f);
+        mFocalMax = Float.valueOf(10f);
+        mFocalFloat = mFocalMax;
         mSeekBarScale = 100.0;
-        mIsoSeekBarValue = Float.valueOf(0);
+        mFocalSeekBarValue = Float.valueOf(0f);
     }
 
-    public Integer getIsoInteger() {
-        return mIsoInteger;
+    public Float getFocalFloat() {
+        return mFocalFloat;
     }
 
-    public void setIsoInteger(Integer isoInteger) {
-        double temp;
+    public void setFocalFloat(Float focalFloat) {
+        float temp;
 
-        if (isoInteger > mIsoMax) {
-            this.mIsoInteger = mIsoMax;
+        if (focalFloat > mFocalMax) {
+            this.mFocalFloat = mFocalMax;
         }
-        else if (isoInteger < mIsoMin) {
-            this.mIsoInteger = mIsoMin;
+        else if (focalFloat < mFocalMin) {
+            this.mFocalFloat = mFocalMin;
         }
         else {
-            this.mIsoInteger = isoInteger;
+            this.mFocalFloat = focalFloat;
         }
-        temp = mIsoInteger / mIsoMin;
-        temp = Math.log(temp);
-        temp = temp / Math.log(mIsoMax/mIsoMin);
-        if (temp > 1) {
-            temp = 1;
-        }
-        mIsoSeekBarValue = (Float) (float)temp;
+        temp = (mFocalMax - focalFloat)/(mFocalMax + focalFloat);
+
+        mFocalSeekBarValue = temp;
     }
 
-    public Integer getIsoMax() {
-        return mIsoMax;
+    public Float getFocalMax() {
+        return mFocalMax;
     }
 
-    public void setIsoMax(Integer isoMax) {
-        this.mIsoMax = isoMax;
+    public void setFocalMax(Float focalMax) {
+        this.mFocalMax = focalMax;
     }
 
-    public Integer getIsoMin() {
-        return mIsoMin;
+    public Float getFocalMin() {
+        return mFocalMin;
     }
 
-    public void setIsoMin(Integer isoMin) {
-        this.mIsoMin = isoMin;
+    public void setFocalMin(Float focalMin) {
+        this.mFocalMin = focalMin;
     }
 
-    public Integer getIsoSeekBar() {
-        return (Integer) (int) Math.round(mIsoSeekBarValue*mSeekBarScale);
+    public Integer getFocalSeekBar() {
+        return (Integer) (int) Math.round(mFocalSeekBarValue *mSeekBarScale);
     }
 
-    public void setIsoSeekBar(int isoSeekBar) {
-        double temp;
-        this.mIsoSeekBarValue = isoSeekBar/(float)mSeekBarScale;
+    public void setFocalSeekBar(int focalSeekBar) {
+        float temp;
+        mFocalSeekBarValue = focalSeekBar/(float)mSeekBarScale;
 
-        temp = Math.pow((double)mIsoMax/mIsoMin,this.mIsoSeekBarValue);
-        temp *= mIsoMin;
-        mIsoInteger = (int)Math.round(temp);
+        temp = (1-mFocalSeekBarValue)/(1+mFocalSeekBarValue);
+        temp *= mFocalMax;
+        mFocalFloat = (float)temp;
     }
 
 

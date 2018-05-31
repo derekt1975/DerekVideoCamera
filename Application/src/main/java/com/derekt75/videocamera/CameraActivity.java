@@ -20,10 +20,18 @@ import android.app.Activity;
 import android.os.Bundle;
 
 public class CameraActivity extends Activity {
+    public IsoSetting isoSetting;
+    public ShutterSetting shutterSetting;
+    public FocalSetting focalSetting;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        isoSetting = new IsoSetting();
+        shutterSetting = new ShutterSetting();
+        focalSetting = new FocalSetting();
+
         setContentView(R.layout.activity_camera);
         if (null == savedInstanceState) {
             getFragmentManager().beginTransaction()

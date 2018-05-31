@@ -41,6 +41,8 @@ import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.SeekBar;
 import android.widget.Toast;
 
 import java.io.File;
@@ -86,6 +88,22 @@ public class DerekVideoCameraFragment extends Fragment
         INVERSE_ORIENTATIONS.append(Surface.ROTATION_180, 90);
         INVERSE_ORIENTATIONS.append(Surface.ROTATION_270, 0);
     }
+
+    private CameraCharacteristics mCameraCharacteristics;
+    private EditText isoEditText;
+    private SeekBar isoSeekBar;
+    private EditText shutterEditText;
+    private SeekBar shutterSeekBar;
+    private EditText focalEditText;
+    private SeekBar focalSeekBar;
+
+    public CameraActivity mainActivity;
+
+    private int mIso;
+    private long mShutter;
+    private float mFocal;
+    private boolean midChange = false;
+    private boolean mPreview = false;
 
     /**
      * An {@link AutoFitTextureView} for camera preview.
@@ -267,6 +285,7 @@ public class DerekVideoCameraFragment extends Fragment
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        mainActivity = (CameraActivity) getActivity();
         return inflater.inflate(R.layout.fragment_derek_video_camera, container, false);
     }
 
@@ -276,6 +295,12 @@ public class DerekVideoCameraFragment extends Fragment
         mButtonVideo = (Button) view.findViewById(R.id.video);
         mButtonVideo.setOnClickListener(this);
         view.findViewById(R.id.info).setOnClickListener(this);
+        isoEditText = (EditText) view.findViewById(R.id.isoText);
+        isoSeekBar = (SeekBar) view.findViewById(R.id.isoSeekBar);
+        shutterEditText = (EditText) view.findViewById(R.id.shutterText);
+        shutterSeekBar = (SeekBar) view.findViewById(R.id.shutterSeekBar);
+        focalEditText = (EditText) view.findViewById(R.id.focalText);
+        focalSeekBar = (SeekBar) view.findViewById(R.id.focalSeekBar);
     }
 
     @Override
@@ -424,11 +449,11 @@ public class DerekVideoCameraFragment extends Fragment
             String cameraId = manager.getCameraIdList()[0];
 
             // Choose the sizes for camera preview and video recording
-            CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
-            Range<Integer> fpsRange[] = characteristics.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES);
-            StreamConfigurationMap map = characteristics
+            mCameraCharacteristics = manager.getCameraCharacteristics(cameraId);
+            Range<Integer> fpsRange[] = mCameraCharacteristics.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES);
+            StreamConfigurationMap map = mCameraCharacteristics
                     .get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-            mSensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
+            mSensorOrientation = mCameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
             if (map == null) {
                 throw new RuntimeException("Cannot get available preview/video sizes");
             }
@@ -445,6 +470,149 @@ public class DerekVideoCameraFragment extends Fragment
             configureTransform(width, height);
             mMediaRecorder = new MediaRecorder();
             manager.openCamera(cameraId, mStateCallback, null);
+
+            Range<Integer> iso_range = mCameraCharacteristics.get(CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE);
+
+            mainActivity.isoSetting.setIsoMin(iso_range.getLower());
+            mainActivity.isoSetting.setIsoMax(iso_range.getUpper());
+
+            isoEditText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+                @Override
+                public void onFocusChange(View v, boolean hasFocus) {
+                    if (!hasFocus && !midChange) {
+                        midChange = true;
+                        mainActivity.isoSetting.setIsoInteger(Integer.parseInt(isoEditText.getText().toString()));
+                        isoEditText.setText(mainActivity.isoSetting.getIsoInteger().toString());
+                        isoSeekBar.setProgress(mainActivity.isoSetting.getIsoSeekBar());
+                        if (mPreview) {
+                            updatePreview();
+                        }
+                        midChange = false;
+                    }
+                }
+            });
+
+            isoSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                    if (!midChange) {
+                        midChange = true;
+                        mainActivity.isoSetting.setIsoSeekBar(progress);
+                        isoSeekBar.setProgress(mainActivity.isoSetting.getIsoSeekBar());
+                        isoEditText.setText(mainActivity.isoSetting.getIsoInteger().toString());
+                        if (mPreview) {
+                            updatePreview();
+                        }
+                        midChange = false;
+                    }
+                }
+
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {
+
+                }
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {
+
+                }
+            });
+
+            Range<Long> shutter_range = mCameraCharacteristics.get(CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE);
+
+            mainActivity.shutterSetting.setShutterMin(shutter_range.getLower());
+            mainActivity.shutterSetting.setShutterMax(shutter_range.getUpper());
+
+            shutterEditText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+                @Override
+                public void onFocusChange(View v, boolean hasFocus) {
+                    if (!hasFocus && !midChange) {
+                        midChange = true;
+                        mainActivity.shutterSetting.setShutterInverted(Long.parseLong(shutterEditText.getText().toString()));
+                        shutterEditText.setText(mainActivity.shutterSetting.getShutterInverted().toString());
+                        shutterSeekBar.setProgress(mainActivity.shutterSetting.getShutterSeekBar());
+                        if (mPreview) {
+                            updatePreview();
+                        }
+                        midChange = false;
+                    }
+                }
+            });
+
+            shutterSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                    if (!midChange) {
+                        midChange = true;
+                        mainActivity.shutterSetting.setShutterSeekBar(progress);
+                        shutterEditText.setText(mainActivity.shutterSetting.getShutterInverted().toString());
+                        shutterSeekBar.setProgress(mainActivity.shutterSetting.getShutterSeekBar());
+                        if (mPreview) {
+                            updatePreview();
+                        }
+                        midChange = false;
+                    }
+                }
+
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {
+
+                }
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {
+
+                }
+            });
+
+            float min_focal_distance = mCameraCharacteristics.get(CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE);
+            //float min_focal_distance = 10;
+            mainActivity.focalSetting.setFocalMax(min_focal_distance);
+
+            focalEditText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+                @Override
+                public void onFocusChange(View v, boolean hasFocus) {
+                    if (!hasFocus && !midChange) {
+                        midChange = true;
+                        mainActivity.focalSetting.setFocalFloat(Float.parseFloat(focalEditText.getText().toString()));
+                        focalEditText.setText(mainActivity.focalSetting.getFocalFloat().toString());
+                        focalSeekBar.setProgress(mainActivity.focalSetting.getFocalSeekBar());
+                        if (mPreview) {
+                            updatePreview();
+                        }
+                        midChange = false;
+                    }
+                }
+            });
+
+            focalSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                    if (!midChange) {
+                        midChange = true;
+                        mainActivity.focalSetting.setFocalSeekBar(progress);
+                        focalSeekBar.setProgress(mainActivity.focalSetting.getFocalSeekBar());
+                        focalEditText.setText(mainActivity.focalSetting.getFocalFloat().toString());
+                        if (mPreview) {
+                            updatePreview();
+                        }
+                        midChange = false;
+                    }
+                }
+
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {
+
+                }
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {
+
+                }
+            });
+
+
+
         } catch (CameraAccessException e) {
             Toast.makeText(activity, "Cannot access the camera.", Toast.LENGTH_SHORT).show();
             activity.finish();
@@ -477,6 +645,26 @@ public class DerekVideoCameraFragment extends Fragment
         }
     }
 
+    private void SetManualExposure() {
+        int iso;
+        long shutter;
+        float focalDistance;
+        if (mainActivity.isoSetting != null && mainActivity.shutterSetting != null && mainActivity.focalSetting != null) {
+            iso = mainActivity.isoSetting.getIsoInteger();
+            shutter = mainActivity.shutterSetting.getShutterLong();
+            focalDistance = mainActivity.focalSetting.getFocalFloat();
+            mPreviewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_OFF);
+            mPreviewBuilder.set(CaptureRequest.SENSOR_SENSITIVITY, iso);
+            mPreviewBuilder.set(CaptureRequest.SENSOR_EXPOSURE_TIME, shutter);
+            mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
+            mPreviewBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, focalDistance);
+
+        }
+        else {
+            mPreviewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
+        }
+    }
+
     /**
      * Start the camera preview.
      */
@@ -489,9 +677,12 @@ public class DerekVideoCameraFragment extends Fragment
             SurfaceTexture texture = mTextureView.getSurfaceTexture();
             assert texture != null;
             texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
-            mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_ZERO_SHUTTER_LAG);
+            mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            SetManualExposure();
 
             Range<Integer> currentFpsRange = mPreviewBuilder.get(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE);
+
+            mPreview = true;
 
             Surface previewSurface = new Surface(texture);
             mPreviewBuilder.addTarget(previewSurface);
@@ -502,7 +693,7 @@ public class DerekVideoCameraFragment extends Fragment
                         @Override
                         public void onConfigured(@NonNull CameraCaptureSession session) {
                             mPreviewSession = session;
-                            updatePreview();
+                            //updatePreview();
                         }
 
                         @Override
@@ -527,8 +718,7 @@ public class DerekVideoCameraFragment extends Fragment
         }
         try {
             setUpCaptureRequestBuilder(mPreviewBuilder);
-            HandlerThread thread = new HandlerThread("CameraPreview");
-            thread.start();
+            SetManualExposure();
             mPreviewSession.setRepeatingRequest(mPreviewBuilder.build(), null, mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -628,6 +818,9 @@ public class DerekVideoCameraFragment extends Fragment
             assert texture != null;
             texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
             mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
+            SetManualExposure();
+
+            //mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
             List<Surface> surfaces = new ArrayList<>();
 
             // Set up Surface for the camera preview
